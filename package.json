@@ -1,0 +1,20 @@
+{
+  "name": "cms-git-hook",
+  "version": "0.0.1",
+  "description": "Update a git repository with CMS changes of a static website",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/baytechc/cms-git-hook.git"
+  },
+  "author": "Flaki <git@flaki.hu>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "execa": "^4.0.3",
+    "nodegit": "^0.27.0"
+  }
+}
