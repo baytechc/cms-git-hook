@@ -1,5 +1,5 @@
 CMS Git Hook
-------------
+============
 
 Tool for receiving webhooks from a CMS (e.g. content change hooks) and regenerating the sources of a static page in a Git repository. This tool is not concerned with generating the built (and deployed) website, but with synchronizing the CMS data into a Git repo, allowing for change tracking and reviews.
 
