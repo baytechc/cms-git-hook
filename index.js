@@ -15,6 +15,13 @@ const globalConfig = {
   buildCommand:   process.env.REPO_BUILD_COMMAND,
   repoUrl:        process.env.GIT_REPO_SSH,
   liveBranch:     process.env.GIT_LIVE_BRANCH,
+
+  // The author is required, committer* settings default to author* values
+  author:           process.env.GIT_AUTHOR || 'CMS Git Sync',
+  authorContact:    process.env.GIT_AUTHOR_CONTACT || 'cmsgitsync@example.com',
+  committer:        process.env.GIT_COMMITTER,
+  committerContact: process.env.GIT_COMMITTER_CONTACT,
+
   // currently unused
   gitUser:        process.env.GIT_USERNAME,
 }
@@ -337,10 +344,12 @@ try {
   console.log(`repo HEAD: ${parent}`);
 
   let author = nodegit.Signature.now(
-    "RustFest CMS Git Sync", "infra@rustfest.eu"
+    cfg.author,
+    cfg.authorContact
   );
   let committer = nodegit.Signature.now(
-    "Bay Area Tech Club", "contact@baytech.community"
+    cfg.committer || cfg.author,
+    cfg.committerContact || cfg.authorContact
   );
 
   let commitmessage = `${date.toISOString()} snapshot build`;
@@ -349,9 +358,14 @@ try {
   console.log(`Committed as "${commitmessage}" to ${commit}`);
 
   await origin.push(snap);
+
+  // TODO: note that this is GitHub-specific
+  let repoLink = cfg.repoUrl.match(/:([\w-]+\/[\w._-]+)\.git/)[1];
+  let compareLink = `https://github.com/${repoLink}/compare/${cfg.liveBranch}...${snap}?expand=1`
+
   console.log(`Pushed changes to origin/${snap}`);
   console.log('Click here to start a pull request:\n'
-    + `https://github.com/RustFestEU/rustfest.global/compare/live...${snap}?expand=1`
+    + compareLink
   );
   // TODO: check if there's an active PR and link to that
   // (by having a snap-* branch and a /pull/N ref that points to the same commit)

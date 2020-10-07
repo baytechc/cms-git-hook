@@ -13,7 +13,7 @@ The first version is based on pulling information out of a Strapi REST endpoint 
 Configure using the following ENV variables.
 
 * `GIT_REPO_SSH`:  
-  Repository URL to pull/push to. Make sure you specify an SSH URL (the code will break on HTTP(S) Git URLs!). E.g.: `git@github.com:user/repo.git`
+  Repository URL to pull/push to. Make sure you specify an SSH URL (the code will break on HTTP(S) Git URLs!). E.g.: `git@github.com:user/repo.git`. GitHub-specific links (e.g. PR URLs and such) are currently derived from this value.
 * `GIT_LIVE_BRANCH`:  
   The branch that CMS content gets committed into. This is the branch we use for creating the initial local repository from, but the code writes new commits to individual snapshot branches.
 * `GIT_PUBKEY_PATH` / `GIT_PRIVKEY_PATH`:  
@@ -22,3 +22,7 @@ Configure using the following ENV variables.
   If the private key requires a passphrase to unlock, you can pass it in here.
 * `REPO_BUILD_COMMAND`:  
   The command to execute on the repo to pull in the updated CMS content, e.g. `npm run get-cms-content` or similar.
+* `GIT_AUTHOR` & `GIT_AUTHOR_CONTACT`:  
+  Author name and contact (email address) to use in commits created by the Git Sync logic.
+* `GIT_COMMITTER` & `GIT_COMMITTER_CONTACT`:  
+  Committer name & contact information to use (defaults to author* values if omitted).
