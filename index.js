@@ -1,10 +1,24 @@
 require('dotenv').config();
+// TODO: maybe skip this on module includes?
 
 // Date for currently running job
 const date = new Date();
 const datestamp = Number(date);
 
-console.log('Git update starting with datestamp: ' + datestamp);
+// Global configuration (used when running from the commandline)
+// When called as an import, these are used as the default config
+// (but the caller can override all properties)
+const globalConfig = {
+  publicKey:      process.env.GIT_PUBKEY_PATH,
+  privateKey:     process.env.GIT_PRIVKEY_PATH,
+  privateKeyPass: process.env.GIT_PRIVKEY_PASSPHRASE,
+  buildCommand:   process.env.REPO_BUILD_COMMAND,
+  repoUrl:        process.env.GIT_REPO_SSH,
+  liveBranch:     process.env.GIT_LIVE_BRANCH,
+  // currently unused
+  gitUser:        process.env.GIT_USERNAME,
+}
+
 
 const nodegit = require('nodegit');
 const path = require('path');
@@ -12,36 +26,64 @@ const path = require('path');
 const execa = require('execa');
 
 
-// Build command to execute on the repo
-if (process.env.REPO_BUILD_COMMAND) {
-  console.log('Need to specify a build command (set REPO_BUILD_COMMAND)');
-  process.exit();
+// Git Credentials
+function makeCreds(cfg) {
+  return (url, userName) => nodegit.Cred.sshKeyNew(
+    'git', // for GitHub this is 'git', not cfg.gitUser
+    cfg.publicKey,
+    cfg.privateKey,
+    cfg.privateKeyPass
+  );
 }
 
-// Git Credentials
-const creds = (url, userName) => nodegit.Cred.sshKeyNew(
-  'git' /*process.env.GIT_USERNAME*/,
-  process.env.GIT_PUBKEY_PATH,
-  process.env.GIT_PRIVKEY_PATH,
-  process.env.GIT_PRIVKEY_PASSPHRASE
-);
+// Origin-specific abstractions
+function setOrigin(origin, cfg) {
+  const creds = makeCreds(cfg);
 
-// Push branch to origin
-let origin;
-const pushToOrigin = async (branch = '*') => {
-  return await origin.push([
-    // Local snapshot to remote snapshot
-    `refs/heads/${branch}:refs/heads/${branch}`
-  ],{
-    callbacks: {
-      credentials: creds
+  return ({
+    // Get nodegit origin object reference
+    get() { return origin },
+
+    // Fetch all from origin
+    async fetch(branch = '*') {
+      await origin.fetch([
+        // Refspecs: by default fetch all
+        `refs/heads/${branch}:refs/heads/${branch}`
+        ],
+        // Fetch options
+        { callbacks: { credentials: creds } }
+      );
+
+      origin.pruneRefs();
+    },
+
+    // Push to origin
+    async push(branch = '*') {
+      await origin.push([
+        // Refspecs: by default push all
+        `refs/heads/${branch}:refs/heads/${branch}`
+        ],
+        // Fetch options
+        { callbacks: { credentials: creds } }
+      );
     }
   });
 }
 
 
+const run = async function(cfg) {
+// Merge Global Config with the overrides in cfg
+cfg = Object.assign({}, globalConfig, cfg);
 
-(async function(){
+// Generate credentials callback using the current config
+const creds = makeCreds(cfg);
+
+// Build command to execute on the repo
+if (!cfg.buildCommand) {
+  console.log('Need to specify a build command (set REPO_BUILD_COMMAND)');
+  return new Error('Unspecified build command!');
+}
+
 
 console.log('Setting up repo...');
 
@@ -49,14 +91,14 @@ let local = "./_repo";
 let repo;
 try {
   // Make sure the repo URL is SSH (not http:!) to avoid weird auth errors!
-  const url = process.env.GIT_REPO_SSH;
-  const branch = process.env.GIT_LIVE_BRANCH;
+  const url = cfg.repoUrl;
+  const branch = cfg.liveBranch;
 
   repo = await nodegit.Clone(url, local, {
     checkoutBranch: branch,
 
     fetchOpts: {
-      callbacks: { credentials: creds }    
+      callbacks: { credentials: creds }
     }
   });
 
@@ -71,26 +113,26 @@ catch (e) {
     repo = await nodegit.Repository.open(local);
   } else {
     console.log(e);
-    process.exit();
+    return e;
   }
 
 }
 
 // Connect to origin and update references
-let reflist;
+let origin, reflist;
 try {
-  origin = await nodegit.Remote.lookup(repo, 'origin');
+  // Connect to origin
+  // (Note: the result will be a custom abstraction over the nodegit object)
+  origin = setOrigin(
+    await nodegit.Remote.lookup(repo, 'origin'),
+    cfg
+  );
 
   console.log(`Updating origin refs...`);
-  await origin.fetch(
-    // Refspecs: fetch all
-    ['refs/heads/*:refs/remotes/origin/*'],
-    // Fetch options
-    { callbacks: { credentials: creds } }
-  );
-  origin.pruneRefs();
+  await origin.fetch();
 
-  reflist = await origin.referenceList();
+  // TODO: move this into setOrigin?
+  reflist = await origin.get().referenceList();
   reflist = reflist.map(r => ({
     ref: r,
     name: r.name(),
@@ -178,7 +220,7 @@ if (!workingBranchRef) {
 
     // Push to origin if no snapshot branch yet
     if (!snapBranchRef) {
-      await pushToOrigin(snap);
+      await origin.push(snap);
       //TODO: assign to snapBranchRef
 
       console.log(`Pushed new ${workingBranchRef.shorthand()} to origin`);
@@ -199,7 +241,7 @@ if (!workingBranchRef) {
 // Switch to branch
 try {
   await repo.checkoutBranch(
-    snap, 
+    snap,
     {
       // Overwrite local changes
       checkoutStrategy: nodegit.Checkout.STRATEGY.FORCE
@@ -292,7 +334,7 @@ try {
 
   // Get repo HEAD commit for the parent of the new HEAD
   let parent = await nodegit.Reference.nameToId(repo, "HEAD");
-  console.log(`repo HEAD: ${parent}`);  
+  console.log(`repo HEAD: ${parent}`);
 
   let author = nodegit.Signature.now(
     "RustFest CMS Git Sync", "infra@rustfest.eu"
@@ -303,10 +345,10 @@ try {
 
   let commitmessage = `${date.toISOString()} snapshot build`;
 
-  commit = await repo.createCommit("HEAD", author, committer, commitmessage, oid, [parent]);
+  let commit = await repo.createCommit("HEAD", author, committer, commitmessage, oid, [parent]);
   console.log(`Committed as "${commitmessage}" to ${commit}`);
 
-  await pushToOrigin(snap);
+  await origin.push(snap);
   console.log(`Pushed changes to origin/${snap}`);
   console.log('Click here to start a pull request:\n'
     + `https://github.com/RustFestEU/rustfest.global/compare/live...${snap}?expand=1`
@@ -318,8 +360,12 @@ catch (e) {
   console.log(e);
 }
 
-// TODO: commit
-// TODO: push
+}
 
-})();
+if (require.main === module) {
+  console.log('Manual CMS Git Sync with datestamp: ' + datestamp);
 
+  run().catch(e => console.error(e));
+} else {
+  module.export = run
+}
