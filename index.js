@@ -270,7 +270,11 @@ catch (e) {
 
 console.log(status);
 
-//TODO: no changes
+// No changes
+if (!status.length) {
+  console.log('No changes detected.');
+  return;
+}
 
 // Add to index & commit
 console.log(`Adding ${status.length} changed path(s) index...`);
