@@ -8,6 +8,18 @@ The first version is based on pulling information out of a Strapi REST endpoint 
 *Very, very beta. May break, or eat your laundry. You have been warned.*
 
 
+## Run modes
+
+There are two ways to use the Git Sync logic, manually or as a webhook listener:
+
+### Manual
+
+Run the repo (`node .`) or the "build" npm script (`npm run build`) to execute the Git Sync logic from the commandline. `.env` files in the project root can be used to configure the script. The script exits after running one sync.
+
+### Webhook
+
+Run the "listen" npm script (`npm run listen`) to start a server (defaults to port `3999`, see configuration) that listens for incoming webhooks.
+
 ## Configuration
 
 Configure using the following ENV variables.
@@ -26,3 +38,12 @@ Configure using the following ENV variables.
   Author name and contact (email address) to use in commits created by the Git Sync logic.
 * `GIT_COMMITTER` & `GIT_COMMITTER_CONTACT`:  
   Committer name & contact information to use (defaults to author* values if omitted).
+
+### Webhook service
+
+Further configuration options available for the webhook service:
+
+* `WEBHOOK_TOKEN`:  
+  Limit access to the webhook service using [HTTP Bearer Token authentication](https://tools.ietf.org/html/rfc6750#section-1.3). If omitted, no check is performed on incoming requests - avoid unsecured webhooks, especially when your service is publicly exposed!
+* `PORT`:  
+  The port to listen for webhook connections on. Optional, defaults to `3999`.

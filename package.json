@@ -4,6 +4,8 @@
   "description": "Update a git repository with CMS changes of a static website",
   "main": "index.js",
   "scripts": {
+    "build": "node .",
+    "listen": "node serve.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,6 +17,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "execa": "^4.0.3",
+    "fastify": "^3.5.1",
     "nodegit": "^0.27.0"
   }
 }

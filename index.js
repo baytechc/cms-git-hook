@@ -78,7 +78,7 @@ function setOrigin(origin, cfg) {
 }
 
 
-const run = async function(cfg) {
+const run = async function(cfg = {}) {
 // Merge Global Config with the overrides in cfg
 cfg = Object.assign({}, globalConfig, cfg);
 
@@ -381,5 +381,5 @@ if (require.main === module) {
 
   run().catch(e => console.error(e));
 } else {
-  module.export = run
+  module.exports = run
 }
