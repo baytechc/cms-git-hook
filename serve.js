@@ -8,7 +8,7 @@ const runsync = require('./index');
 const port = process.env.PORT || 3999;
 
 // Default webhook endpoint is simply the root (/)
-const endpoint = process.env.PORT || '/';
+const endpoint = process.env.WEBHOOK_ENDPOINT || '/';
 
 // Weebhook authentication token
 const webhooktoken = process.env.WEBHOOK_TOKEN;

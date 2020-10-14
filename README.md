@@ -47,3 +47,5 @@ Further configuration options available for the webhook service:
   Limit access to the webhook service using [HTTP Bearer Token authentication](https://tools.ietf.org/html/rfc6750#section-1.3). If omitted, no check is performed on incoming requests - avoid unsecured webhooks, especially when your service is publicly exposed!
 * `PORT`:  
   The port to listen for webhook connections on. Optional, defaults to `3999`.
+* `WEBHOOK_ENDPOINT`:  
+  The URL endpoint to listen on for incoming webhook calls. Defaults to `/`.
