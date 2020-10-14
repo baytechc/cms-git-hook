@@ -303,14 +303,16 @@ catch (e) {
 
 // TODO: (optional) auto-merge main
 
+try {
 
 // Install npm dependencies
 console.log('Running npm install...');
 let npmInstall = await execa.command('npm install --no-audit', {
   cwd: process.cwd()+'/_repo'
 });
+console.log('Done:');
 console.log(npmInstall.stdout);
-// TODO: error handling
+
 
 // Generate new snapshot
 let cmd = process.env.REPO_BUILD_COMMAND;
@@ -321,9 +323,14 @@ let runSnapshot = await execa.command(cmd, {
   env: process.env
 });
 // Show files recognized by Eleventy
-console.log(runSnapshot);
-// TODO: error handling
+console.log('Done:');
+console.log(runSnapshot.stdout);
 
+}
+catch(e) {
+  console.error(e);
+  process.exit();
+}
 
 // Repository status after snapshot build
 console.log('Checking for changed files...');
