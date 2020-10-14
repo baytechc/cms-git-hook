@@ -307,7 +307,7 @@ try {
 
 // Install npm dependencies
 let installcmd = process.env.REPO_INSTALL_COMMAND || 'npm install';
-console.log('Running npm install: ${installcmd}');
+console.log(`Running npm install: ${installcmd}`);
 
 let npmInstall = await execa.command(installcmd, {
   cwd: process.cwd()+'/_repo'
