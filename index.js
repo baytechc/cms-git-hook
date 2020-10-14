@@ -359,11 +359,11 @@ try {
   status.forEach( f => {
     f.info = [
       f.path,
-      f.untracked && '[new]',
-      f.modified && '[modified]',
-      f.typechanged && '[typechange]',
-      f.renamed && '[renamed]',
-      f.ignored && '[ignored]',
+      f.untracked ? '[new]' :'',
+      f.modified ? '[modified]' :'',
+      f.typechanged ? '[typechange]' :'',
+      f.renamed ? '[renamed]' :'',
+      f.ignored ? '[ignored]' :'',
     ].join(' ');
   });
 }
