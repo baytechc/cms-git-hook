@@ -306,8 +306,10 @@ catch (e) {
 try {
 
 // Install npm dependencies
-console.log('Running npm install...');
-let npmInstall = await execa.command('npm install --no-audit', {
+let installcmd = process.env.REPO_INSTALL_COMMAND || 'npm install';
+console.log('Running npm install: ${installcmd}');
+
+let npmInstall = await execa.command(installcmd, {
   cwd: process.cwd()+'/_repo'
 });
 console.log('Done:');
@@ -315,10 +317,10 @@ console.log(npmInstall.stdout);
 
 
 // Generate new snapshot
-let cmd = process.env.REPO_BUILD_COMMAND;
+let buildcmd = process.env.REPO_BUILD_COMMAND;
 
-console.log(`Build started by: ${cmd}`);
-let runSnapshot = await execa.command(cmd, {
+console.log(`Build started by: ${buildcmd}`);
+let runSnapshot = await execa.command(buildcmd, {
   cwd: process.cwd()+'/_repo',
   env: process.env
 });
