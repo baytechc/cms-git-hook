@@ -77,6 +77,34 @@ function setOrigin(origin, cfg) {
   });
 }
 
+// Generate a reflist
+async function refListFor(target) {
+  let reflist;
+
+  // for remotes
+  if ('referenceList' in target) {
+    reflist = await target.referenceList();
+
+  // for local repos
+  } else if ('getReferences' in target) {
+    reflist = await target.getReferences();
+
+  } else {
+    console.log(`Couldn't get references!`);
+    return [];
+  }
+
+  reflist = reflist.map(r => ({
+    ref: r,
+    name: r.name(),
+    oid: (r.target ? r.target() : r.oid()).tostrS()
+  }));
+
+  // DEBUG
+  //console.log(reflist.map(r => `[${r.oid}] ${r.name}`));
+
+  return reflist;
+}
 
 const run = async function(cfg = {}) {
 // Merge Global Config with the overrides in cfg
@@ -118,6 +146,9 @@ catch (e) {
 
     // Open the existing repo
     repo = await nodegit.Repository.open(local);
+
+    let repoRefs = refListFor(repo);
+
   } else {
     console.log(e);
     return e;
@@ -126,7 +157,7 @@ catch (e) {
 }
 
 // Connect to origin and update references
-let origin, reflist;
+let origin, originRefs;
 try {
   // Connect to origin
   // (Note: the result will be a custom abstraction over the nodegit object)
@@ -139,20 +170,13 @@ try {
   await origin.fetch();
 
   // TODO: move this into setOrigin?
-  reflist = await origin.get().referenceList();
-  reflist = reflist.map(r => ({
-    ref: r,
-    name: r.name(),
-    oid: r.oid().tostrS()
-  }))
-  console.log(reflist.map(r => r.name));
-}
-catch(e) {
+  originRefs = await refListFor(origin.get());
+} catch(e) {
   console.log(e);
 }
 
 // Try and find the latest snapshot branch and update that:
-// * in reflist: 'refs/heads/snap-XXXXXXXX',
+// * in originRefs: 'refs/heads/snap-XXXXXXXX',
 // * and also:   'refs/pull/N/head'
 // If the OID of snapshot === OID of largest N pull head, that
 // means that it is tracking the PR and we can push to it. After
@@ -162,7 +186,7 @@ catch(e) {
 
 let snap, snapmax = 0;
 let liveBranchRef, snapBranchRef;
-for (let r of reflist) {
+for (let r of originRefs) {
   // find all snapshot branches
   if (r.name.match(/^refs\/heads\/snap-\d+/)) {
     let snapid = parseInt(r.name.slice(16), 10);
@@ -193,13 +217,24 @@ if (snapBranchRef) {
 
     console.log(`On ${workingBranchRef.shorthand()} branch`);
 
-    //TODO: Ensure local branch is up to date
-    //console.log(currentBranchRef.cmp(snapBranchRef.oid()))
-    console.log(`Local branch is up to date.`);
+    // Ensure local branch is up to date
+    // Note: the origin fetch should have taken care of this if the local snap
+    // can be fast-forwarded so most of the time we are just being extra cautious
+    const repoRefS = currentBranchRef.target().tostrS();
+    const snapRefS = snapBranchRef.oid().tostrS();
+    if (repoRefS !== snapRefS) {
+      console.log(`Local:  ${repoRefS} ${currentBranchRef.name()}`);
+      console.log(`Remote: ${snapRefS} ${snapBranchRef.name()}`);
+      throw new Error(`Local branch is not up to date with remote snap branch!`);
+    }
+
+    console.log(`Local branch is up to date (${snapRefS}).`);
 
   }
   catch (e) {
-    console.log(e);
+    console.error(e);
+    // TODO: just pull anew?
+    process.exit();
   }
 }
 
@@ -263,7 +298,7 @@ catch (e) {
 }
 
 
-// TODO: Pull
+// TODO: Pull - tihs is probably not needed 99% of the time
 // https://github.com/nodegit/nodegit/blob/master/examples/pull.js
 
 // TODO: (optional) auto-merge main
