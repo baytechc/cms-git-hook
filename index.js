@@ -353,13 +353,22 @@ try {
     typechanged: !!file.isTypechange(),
     renamed:     !!file.isRenamed(),
     ignored:     !!file.isIgnored(),
-  }));
+  })).forEach( f => {
+    f.info = [
+      f.path,
+      f.untracked && '[new]',
+      f.modified && '[modified]',
+      f.typechanged && '[typechange]',
+      f.renamed && '[renamed]',
+      f.ignored && '[ignored]',
+    ].join(' ');
+  });
 }
 catch (e) {
   console.log(e);
 }
 
-console.log(status);
+console.log(status.map(s => s.info));
 
 // No changes
 if (!status.length) {
