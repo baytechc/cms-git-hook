@@ -353,7 +353,10 @@ try {
     typechanged: !!file.isTypechange(),
     renamed:     !!file.isRenamed(),
     ignored:     !!file.isIgnored(),
-  })).forEach( f => {
+  })) || [];
+
+  // Human-readable status info
+  status.forEach( f => {
     f.info = [
       f.path,
       f.untracked && '[new]',
