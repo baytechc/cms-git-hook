@@ -1,6 +1,6 @@
 {
   "name": "cms-git-hook",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Update a git repository with CMS changes of a static website",
   "main": "index.js",
   "scripts": {
