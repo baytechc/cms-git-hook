@@ -16,6 +16,9 @@ const endpoint = process.env.WEBHOOK_ENDPOINT || '/';
 // Weebhook authentication token
 const webhooktoken = process.env.WEBHOOK_TOKEN;
 
+// Ignored models (no updates triggered)
+const ignored = process.env.WEBHOOK_IGNORED_MODELS || '';
+
 
 function init() {
   const app = fastify();
@@ -32,6 +35,12 @@ function init() {
     // we need to track that separately.
     // TODO: track build status
     reply.send(200);
+
+    // Do not run for webhooks that are triggered by ignored models
+    if (ignored.includes(request.body.model)) {
+      console.log(`Ignored: ${request.body.event} in ${request.body.model}`);
+      return;
+    }
 
     // TODO: process request.body and pass in some useful metadata to the
     // sync logic (e.g. update type and CMS user who invoked the change)
