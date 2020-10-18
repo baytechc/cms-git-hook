@@ -1,9 +1,6 @@
 require('dotenv').config();
 // TODO: maybe skip this on module includes?
 
-// Date for currently running job
-const date = new Date();
-const datestamp = Number(date);
 
 // Global configuration (used when running from the commandline)
 // When called as an import, these are used as the default config
@@ -107,6 +104,11 @@ async function refListFor(target) {
 }
 
 const run = async function(cfg = {}) {
+
+// Date for currently running job
+const date = cfg.date || new Date();
+const datestamp = Number(date);
+
 // Merge Global Config with the overrides in cfg
 cfg = Object.assign({}, globalConfig, cfg);
 
@@ -433,9 +435,10 @@ catch (e) {
 }
 
 if (require.main === module) {
-  console.log('Manual CMS Git Sync with datestamp: ' + datestamp);
+  const date = new Date()
+  console.log('Manual CMS Git Sync with datestamp: ' + date);
 
-  run().catch(e => console.error(e));
+  run({date}).catch(e => console.error(e));
 } else {
   module.exports = run
 }
